@@ -1,4 +1,4 @@
-# wrangling-IFLS
+# Indonesia Family Life Survey: Data Wrangling and Variable Generation
 Playing around with IFLS (Indonesia Family Life Survey) data to generate total household expenditures, total per capita expenditure, and total household asset variables.
 
 The complete IFLS dataset are publicly available for download on https://www.rand.org/well-being/social-and-behavioral-policy/data/FLS/IFLS/access.html.
