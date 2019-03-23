@@ -97,3 +97,39 @@ household_exp <- merge(nonfood_exp, food_exp, by="hhid14_9")
 attach(household_exp)
 household_exp$sum_exp <- sum_nonfood_exp + food
 
+##GENERATING HOUSEHOLD SIZE##                    
+bk_ar1 <- read.dta13("bk_ar1.dta")
+#ar01a is a question on whether the listed Anggota Rumah Tangga (household member) is still a part of the same household
+#Only include answers ar01a=1, ar01a=2, and ar01a=5, and ar01a=11 -- ar01a=0 is a code for "has died" and ar01a=3 is a code for "no longer part of the same household"                  
+bk_ar1 <- bk_ar1[bk_ar1$ar01a == 1 | bk_ar1$ar01a == 2 | bk_ar1$ar01a == 5 | bk_ar1$ar01a == 11,]
+household_size <- data.frame(count(bk_ar1,hhid14_9))
+
+##MERGING HOUSEHOLD EXPENDITURE AND HOUSEHOLD SIZE##
+household_exp <- merge(household_exp, household_size, by="hhid14_9")
+attach(household_exp)                     
+household_exp$pce <- sum_exp/n             
+
+##GENERATING TOTAL HOUSEHOLD ASSETS##
+#Household asset data are available in "b2_hr1"
+b2_hr1 <- read.dta13("b2_hr1.dta")
+total_assets <- b2_hr1[,c("hhid14_9","hrtype","hr02_f","hr02_d1","hr02_g","hr02_h","hr02_k2","hr02_a","hr02_c","hr02_k1","hr02_d3","hr02_b","hr02_e","hr02_d2","hr02_j")]
+total_assets[is.na(total_assets)] = 0  #transforming NAs into 0
+total_assets <- reshape(total_assets,idvar="hhid14_9",timevar="hrtype",direction="wide") #transforming the data structure from long format into wide format
+
+#Calculating the sum of the value of each asset type
+total_assets$sum_asset <- rowSums(total_assets[,-1])
+
+total_assets <- total_assets[,c("hhid14_9", "sum_asset")]
+                     
+##MERGING HOUSEHOLD EXPENDITURE AND ASSET##
+hh_data <- merge(household_exp, total_assets, by="hhid14_9")
+
+                     
+                     
+
+                     
+                     
+              
+                    
+                       
+                     
