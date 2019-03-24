@@ -176,4 +176,19 @@ hhdata_cluster3 <- kmeans(std_hh_data, 4, iter.max=100,nstart=100)
                              
 ##Final number of clusters chosen : 4  
                              
+##WHAT HAPPENED WHEN RISK-TAKING VARIABLE IS TAKEN INTO ACCOUNT?##
+#Risk-taking behavior data (note that the data are at an individual level within a household) are available in "b3a_si"
+#Given that the risk-taking behavior data are at an individual level, later it will have to be aggregated into a household-level data 
+#Household-level risk-taking behavior data is computed by taking the average risk-taking level of individuals within a household                    
+                     
+risk <- read.dta13("b3a_si.dta")[,c("hhid14_9","pid14","si02","si03","si04","si05","si12","si13","si14","si15")]
+risk_r <- reshape(risk,idvar="hhid14_9",timevar="pid14",direction="wide")
+risk_r[risk_r == 8] <- NA #answer "8" means "I don't know"
+risk_r[risk_r == 9] <- NA #"9" means "MISSING"                    
+              
+risk_r$hh_risktaking <- rowMeans(risk_r[,-1],na.rm=TRUE)
+risk_r <- risk_r[,c("hhid14_9","hh_risktaking")]
+
+##MERGING HOUSEHOLD EXPENDITURE, ASSET, LOAN, AND RISK-TAKING BEHAVIOR DATA##
+hh_data <- merge(hh_data, risk_r, by="hhid14_9")
                      
