@@ -5,6 +5,7 @@ library(readstata13) #Function to read and write the 'Stata' file format
 library(NbClust) #Function to cluster
 library(mclust) #Function to cluster
 library(gmodels) #Function to cluster
+library(factoextra)
 library(dplyr)
 
 ##GENERATING HOUSEHOLD-LEVEL MONTHLY FOOD EXPENDITURE VARIABLE
@@ -97,7 +98,8 @@ household_exp <- merge(nonfood_exp, food_exp, by="hhid14_9")
 attach(household_exp)
 household_exp$sum_exp <- sum_nonfood_exp + food
 
-##GENERATING HOUSEHOLD SIZE##                    
+##GENERATING HOUSEHOLD SIZE##  
+#Household size data are available in"bk_ar1"                     
 bk_ar1 <- read.dta13("bk_ar1.dta")
 #ar01a is a question on whether the listed Anggota Rumah Tangga (household member) is still a part of the same household
 #Only include answers ar01a=1, ar01a=2, and ar01a=5, and ar01a=11 -- ar01a=0 is a code for "has died" and ar01a=3 is a code for "no longer part of the same household"                  
@@ -124,12 +126,54 @@ total_assets <- total_assets[,c("hhid14_9", "sum_asset")]
 ##MERGING HOUSEHOLD EXPENDITURE AND ASSET##
 hh_data <- merge(household_exp, total_assets, by="hhid14_9")
 
+##GENERATING CURRENT LOAN AND PAST LOAN DATA##
+#Loan-related data are available in "b2_bh"
                      
-                     
+loan <- read.dta13("b2_bh.dta")[,c("hhid14_9","bh27","bh28")]                     
+colnames(loan)[colnames(loan)=="bh27"] <- "past_loan" #changing the name of the variable                    
+colnames(loan)[colnames(loan)=="bh28"] <- "current_loan" #changing the name of the variable                          
+loan$past_loan[is.na(loan$past_loan)] <- 0 #transforming NAs into 0
+loan$current_loan[is.na(loan$current_loan)] <- 0 #transforming NAs into 0                 
+                                                              
+##MERGING HOUSEHOLD EXPENDITURE, ASSET, AND LOAN DATA##
+hh_data <- merge(hh_data, loan, by="hhid14_9")                     
+
+##GETTING A SENSE OF DATA DISTRIBUTION##
+attach(hh_data)
+summary(hh_data)                     
+hist(sum_exp)
+hist(n)                     
+hist(sum_asset)
+hist(past_loan)
+hist(current_loan)
+#takeaway: Data are not normally distributed
 
                      
+##K-MEANS CLUSTERING FOR HOUSEHOLD DATA (EXPENDITURE, ASSET, AND LOAN)##
+hh_data_kmeans <- na.omit(hh_data) #omitting NAs because k-means clustering does not allow for missing data                     
+std_hh_data <- scale(hh_data_kmeans[,c("sum_exp","n","sum_asset","past_loan","current_loan")]) #standardizing the data
+corr <- data.frame(round(cor(std_hh_data),2)) #checking the correlation matrix among each of the variable
+                             
+#K-means clustering -- 3-cluster solution#                             
+hhdata_cluster3 <- kmeans(std_hh_data, 3, iter.max=100,nstart=100)
+#K-means clustering with 3 clusters of sizes 1094, 13056, 15
+#Cluster means:
+#     sum_exp           n  sum_asset  past_loan       current_loan
+#1  1.8843810  0.50452945  2.4503066  0.46596957      1.1604038
+#2 -0.1580877 -0.04302733 -0.2067697 -0.07068136     -0.1161501
+#3  0.1653527  0.65397222  1.2633067  27.53634574     16.4649086                             
                      
-              
-                    
-                       
+                             
+#K-means clustering -- 4-cluster solution#                             
+hhdata_cluster3 <- kmeans(std_hh_data, 4, iter.max=100,nstart=100)   
+#K-means clustering with 4 clusters of sizes 6620, 15, 6606, 924
+#Cluster means:
+#      sum_exp          n  sum_asset  past_loan     current_loan
+#1 -0.02169334  0.7458818 -0.1257143  -0.05213466    -0.09241357
+#2  0.16535267  0.6539722  1.2633067  27.53634574    16.46490865
+#3 -0.26369070 -0.8050114 -0.2515442  -0.08436371    -0.13033854
+#4  2.03795497  0.4008209  2.6785500   0.52964598     1.32664565
+                             
+##Final number of clusters chosen : 4  
+                             
                      
